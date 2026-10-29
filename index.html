@@ -84,7 +84,8 @@ const plan = [
  ]}
 ];
 const defaults={done:{},week:{},notes:"",projects:0};
-let state=loadLocal(), cloudReady=false, supabase=null, userId=null, saveTimer=null;
+let state=loadLocal(), cloudReady=false, supabaseClient=null, userId=null, saveTimer=null;
+
 function loadLocal(){try{return {...defaults,...JSON.parse(localStorage.getItem("my-route-state")||"{}")}}catch{return {...defaults}}}
 function saveLocal(){localStorage.setItem("my-route-state",JSON.stringify(state));document.getElementById("lastSaved").textContent="Сохранено: "+new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});}
 function totalTasks(){return plan.reduce((n,t)=>n+t.tasks.length,0)}
@@ -121,14 +122,14 @@ async function initCloud(){
  if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){setStatus("Сохранение на этом устройстве");return}
  try{
   await new Promise((resolve,reject)=>{let s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});
-  supabase=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
-  const {data:authData,error:authError}=await supabase.auth.signInAnonymously();if(authError)throw authError;userId=authData.user.id;
-  const {data,error}=await supabase.from("progress").select("state").eq("user_id",userId).maybeSingle();if(error)throw error;
+  supabaseClient=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const {data:authData,error:authError}=await supabaseClient.auth.signInAnonymously();if(authError)throw authError;userId=authData.user.id;
+  const {data,error}=await supabaseClient.from("progress").select("state").eq("user_id",userId).maybeSingle();if(error)throw error;
   if(data&&data.state){state={...defaults,...data.state};saveLocal();document.getElementById("notes").value=state.notes||"";render()}
   cloudReady=true;setStatus("Облако подключено",true);
  }catch(e){console.warn("Cloud sync unavailable",e);setStatus("Локально · облако не подключено");}
 }
-function scheduleCloudSave(){if(!cloudReady||!supabase||!userId)return;clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{try{const {error}=await supabase.from("progress").upsert({user_id:userId,state:state,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)throw error;setStatus("Облако сохранено",true)}catch(e){console.warn(e);setStatus("Ошибка облачного сохранения")}},700)}
+function scheduleCloudSave(){if(!cloudReady||!supabaseClient||!userId)return;clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{try{const {error}=await supabaseClient.from("progress").upsert({user_id:userId,state:state,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)throw error;setStatus("Облако сохранено",true)}catch(e){console.warn(e);setStatus("Ошибка облачного сохранения")}},700)}
 render();initCloud();
 </script>
 </body></html>
