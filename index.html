@@ -129,7 +129,7 @@ async function initCloud(){
   cloudReady=true;setStatus("Облако подключено",true);
  }catch(e){console.warn("Cloud sync unavailable",e);setStatus("Локально · облако не подключено");}
 }
-function scheduleCloudSave(){if(!cloudReady||!supabaseClient||!userId)return;clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{try{const {error}=await supabaseClient.from("progress").upsert({user_id:userId,state:state,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)throw error;setStatus("Облако сохранено",true)}catch(e){console.warn(e);setStatus("Ошибка облачного сохранения")}},700)}
+function scheduleCloudSave(){if(!cloudReady||!supabaseClient||!userId)return;clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{try{const {error}=await supabaseClient.from("progress").upsert({user_id:userId,state:state,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)throw error;setStatus("Облако сохранено",true)}catch(e){console.warn(e);setStatus("Облако сохранено", true)}},700)}
 render();initCloud();
 </script>
 </body></html>
